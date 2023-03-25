@@ -1,6 +1,6 @@
 package com.example.weatherapp.models
 
-class Main (
+data class Main (
     val temp: Double,
     val feels_like: Double,
     val temp_min: Double,

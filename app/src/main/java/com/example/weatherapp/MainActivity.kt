@@ -16,6 +16,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.weatherapp.Constants
+import com.example.weatherapp.models.Weather
+import com.example.weatherapp.models.WeatherResponse
+import com.example.weatherapp.network.WeatherService
 import com.google.android.gms.location.*
 import com.google.gson.Gson
 import com.karumi.dexter.Dexter
@@ -25,12 +28,19 @@ import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
 
 import retrofit.*
+import retrofit2.Call
+import java.nio.DoubleBuffer
 
 
 class MainActivity : AppCompatActivity() {
 
     // A fused location client variable which is further user to get the user's current location
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
+
+
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,28 +141,71 @@ class MainActivity : AppCompatActivity() {
     private val mLocationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val mLastLocation: Location? = locationResult.lastLocation
-            val latitude = mLastLocation?.latitude
+            val latitude = mLastLocation!!.latitude
             Log.i("Current Latitude", "$latitude")
 
-            val longitude = mLastLocation?.longitude
+            val longitude = mLastLocation!!.longitude
             Log.i("Current Longitude", "$longitude")
 
 
-            getLocationWeatherDetails()
+
+            getLocationWeatherDetails(latitude,longitude)
+
+
         }
     }
 
 
-    private fun getLocationWeatherDetails(){
+    private fun getLocationWeatherDetails(latitude: Double,longitude: Double){
 
         //sprawdzamy dostep do internetu
         if (Constants.isNetworkAvailable(this@MainActivity)) {
 
-            Toast.makeText(
-                this@MainActivity,
-                "You have connected to the internet. Now you can make an api call.",
-                Toast.LENGTH_SHORT
-            ).show()
+            val retrofit: Retrofit = Retrofit.Builder() //tworzymy obiekt retrofit
+                .baseUrl(Constants.base_url) //za pomoca base_url
+                .addConverterFactory(GsonConverterFactory.create()) //format json
+                .build()
+
+            val service: WeatherService = retrofit.create(WeatherService::class.java) //prepare service
+
+            val listCall: retrofit.Call<WeatherResponse> = service.getWeather(latitude,longitude,Constants.metric_unit,Constants.app_id) //prepare listCall
+
+            listCall.enqueue(object : Callback<WeatherResponse> {
+                @SuppressLint("SetTextI18n")
+                override fun onResponse(
+                    response: Response<WeatherResponse>,
+                    retrofit: Retrofit
+                ) {
+
+                    // Check weather the response is success or not.
+                    if (response.isSuccess) {
+
+                        /** The de-serialized response body of a successful response. */
+                        val weatherList: WeatherResponse = response.body()
+                        Log.i("Response Result", "$weatherList")
+                    } else {
+                        // If the response is not success then we check the response code.
+                        val sc = response.code()
+                        when (sc) {
+                            400 -> {
+                                Log.e("Error 400", "Bad Request")
+                            }
+                            404 -> {
+                                Log.e("Error 404", "Not Found")
+                            }
+                            else -> {
+                                Log.e("Error", "Generic Error")
+                            }
+                        }
+                    }
+                }
+
+                override fun onFailure(t: Throwable) {
+                    Log.e("Errorrrrr", t.message.toString())
+                }
+            })
+            // END
+
         } else {
             Toast.makeText(
                 this@MainActivity,
@@ -164,3 +217,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 }
+
+private fun <T> Call<T>.enqueue(callback: Callback<T>) {
+
+}
+
+
+
+

@@ -1,5 +1,5 @@
 package com.example.weatherapp.models
 
-class Clouds(
+data class Clouds(
     val all: Int
 ): java.io.Serializable

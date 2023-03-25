@@ -2,7 +2,7 @@ package com.example.weatherapp.models
 
 import java.io.Serializable
 
-class WeatherResponse (
+data class WeatherResponse (
         val coord: Coord,
         val weather: List<Weather>,
         val base: String,

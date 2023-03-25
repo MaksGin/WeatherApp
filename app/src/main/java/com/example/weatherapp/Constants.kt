@@ -7,6 +7,11 @@ import android.os.Build
 
 object Constants{
 
+    const val app_id: String = "a5893be58f561469805b6b69d9e8329e"
+    const val base_url: String = "http://api.openweathermap.org/data/"
+    const val metric_unit: String = "metric"
+
+
     fun isNetworkAvailable(context: Context): Boolean{
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE)
                 as ConnectivityManager

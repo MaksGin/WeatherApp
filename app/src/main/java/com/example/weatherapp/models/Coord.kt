@@ -1,6 +1,6 @@
 package com.example.weatherapp.models
 
-class Coord (
+data class Coord (
     val lon: Double,
     val lat: Double
 

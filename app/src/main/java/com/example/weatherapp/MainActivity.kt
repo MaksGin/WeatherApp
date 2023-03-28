@@ -1,7 +1,9 @@
 package com.example.weatherapp
 
+
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -15,36 +17,40 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.example.weatherapp.Constants
-import com.example.weatherapp.models.Weather
-import com.example.weatherapp.models.WeatherResponse
-import com.example.weatherapp.network.WeatherService
 import com.google.android.gms.location.*
-import com.google.gson.Gson
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import com.example.weatherapp.R
+import com.example.weatherapp.databinding.ActivityMainBinding
+import com.example.weatherapp.models.WeatherResponse
+import com.example.weatherapp.network.WeatherService
 
 import retrofit.*
-import retrofit2.Call
-import java.nio.DoubleBuffer
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
 
+
+
+    private var binding: ActivityMainBinding? = null
     // A fused location client variable which is further user to get the user's current location
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
 
-
-
-
-
-
+    private var mProgressDialog: Dialog? = null
+    /*
+    private var tv_main = binding?.tvMain?.text
+    private var tv_description = binding?.tvMainDescription?.toString()
+    private var tvTemp = binding?.tvDegree?.text.toString()
+    */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding?.root)
 
         // Initialize the Fused location variable
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //aktualna lokalizacja uzytkownika
@@ -91,11 +97,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showProgressDialog(){
+        mProgressDialog = Dialog(this)
+
+        mProgressDialog!!.setContentView(R.layout.dialog_custom_progress)
+
+        mProgressDialog!!.show()
+    }
+
+    private fun hideProgressDialog(){
+
+        if(mProgressDialog != null){
+            mProgressDialog!!.dismiss()
+        }
+    }
+
     //czy usługi lokalizacyjne są włączone na urządzeniu
     private fun isLocationEnabled(): Boolean {
 
         val locationManager: LocationManager =
-            getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            getSystemService(LOCATION_SERVICE) as LocationManager
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
             LocationManager.NETWORK_PROVIDER
         )
@@ -168,7 +189,9 @@ class MainActivity : AppCompatActivity() {
 
             val service: WeatherService = retrofit.create(WeatherService::class.java) //prepare service
 
-            val listCall: retrofit.Call<WeatherResponse> = service.getWeather(latitude,longitude,Constants.metric_unit,Constants.app_id) //prepare listCall
+            val listCall: Call<WeatherResponse> = service.getWeather(latitude,longitude,Constants.metric_unit,Constants.app_id) //prepare listCall
+
+            showProgressDialog()
 
             listCall.enqueue(object : Callback<WeatherResponse> {
                 @SuppressLint("SetTextI18n")
@@ -180,8 +203,10 @@ class MainActivity : AppCompatActivity() {
                     // Check weather the response is success or not.
                     if (response.isSuccess) {
 
-                        /** The de-serialized response body of a successful response. */
+                        hideProgressDialog()
+
                         val weatherList: WeatherResponse = response.body()
+                        setupUI(weatherList)
                         Log.i("Response Result", "$weatherList")
                     } else {
                         // If the response is not success then we check the response code.
@@ -201,6 +226,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onFailure(t: Throwable) {
+                    hideProgressDialog()
                     Log.e("Errorrrrr", t.message.toString())
                 }
             })
@@ -216,6 +242,25 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+
+    private fun setupUI(weatherList: WeatherResponse){
+
+        for(i in weatherList.weather.indices){
+            Log.i("Weather name",weatherList.weather.toString())
+
+            binding?.tvMain?.text = weatherList.weather[i].main
+            binding?.tvMainDescription?.text = weatherList.weather[i].description
+            binding?.tvDegree?.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+        }
+    }
+    private fun getUnit(value: String): String? {
+
+        var value = "°C"
+        if ("US" == value || "LR" == value || "MM" == value) {
+            value = "°F"
+        }
+        return value
+    }
 }
 
 private fun <T> Call<T>.enqueue(callback: Callback<T>) {

@@ -5,7 +5,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.ActivityNotFoundException
-import android.content.Context
 import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
@@ -23,7 +22,6 @@ import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
-import com.example.weatherapp.R
 import com.example.weatherapp.databinding.ActivityMainBinding
 import com.example.weatherapp.models.WeatherResponse
 import com.example.weatherapp.network.WeatherService
@@ -243,14 +241,25 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun setupUI(weatherList: WeatherResponse){
+    private fun setupUI(weatherList: WeatherResponse) {
 
-        for(i in weatherList.weather.indices){
-            Log.i("Weather name",weatherList.weather.toString())
+        for (i in weatherList.weather.indices) {
+            Log.i("Weather name", weatherList.weather.toString())
 
             binding?.tvMain?.text = weatherList.weather[i].main
             binding?.tvMainDescription?.text = weatherList.weather[i].description
-            binding?.tvDegree?.text = weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvDegree?.text =
+                weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvDegreeDesc?.text = weatherList.main.feels_like.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvSpeed?.text = weatherList.wind.speed.toString()
+            binding?.tvMin?.text =
+                weatherList.main.temp_min.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvMax?.text =
+                weatherList.main.temp_max.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvCountry?.text = weatherList.sys.country
+            binding?.tvName?.text = weatherList.name
+            binding?.tvSunriseTime?.text = unixTime(weatherList.sys.sunrise.toLong())
+            binding?.tvSunsetTime?.text = unixTime(weatherList.sys.sunset.toLong())
         }
     }
     private fun getUnit(value: String): String? {
@@ -260,6 +269,13 @@ class MainActivity : AppCompatActivity() {
             value = "°F"
         }
         return value
+    }
+
+    private fun unixTime(timex: Long): String?{
+        val date = Date(timex* 1000L)
+        val sdf = SimpleDateFormat("HH:mm")
+        sdf.timeZone = TimeZone.getDefault()
+        return sdf.format(date)
     }
 }
 

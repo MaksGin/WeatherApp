@@ -13,6 +13,8 @@ import android.os.Bundle
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -34,12 +36,13 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
 
 
-
     private var binding: ActivityMainBinding? = null
+
     // A fused location client variable which is further user to get the user's current location
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
 
     private var mProgressDialog: Dialog? = null
+
     /*
     private var tv_main = binding?.tvMain?.text
     private var tv_description = binding?.tvMainDescription?.toString()
@@ -51,7 +54,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding?.root)
 
         // Initialize the Fused location variable
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this) //aktualna lokalizacja uzytkownika
+        mFusedLocationClient =
+            LocationServices.getFusedLocationProviderClient(this) //aktualna lokalizacja uzytkownika
 
         if (!isLocationEnabled()) { //sprawdzenie usługi lokalizacji
             Toast.makeText(
@@ -95,7 +99,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showProgressDialog(){
+    private fun showProgressDialog() {
         mProgressDialog = Dialog(this)
 
         mProgressDialog!!.setContentView(R.layout.dialog_custom_progress)
@@ -103,9 +107,9 @@ class MainActivity : AppCompatActivity() {
         mProgressDialog!!.show()
     }
 
-    private fun hideProgressDialog(){
+    private fun hideProgressDialog() {
 
-        if(mProgressDialog != null){
+        if (mProgressDialog != null) {
             mProgressDialog!!.dismiss()
         }
     }
@@ -168,14 +172,14 @@ class MainActivity : AppCompatActivity() {
 
 
 
-            getLocationWeatherDetails(latitude,longitude)
+            getLocationWeatherDetails(latitude, longitude)
 
 
         }
     }
 
 
-    private fun getLocationWeatherDetails(latitude: Double,longitude: Double){
+    private fun getLocationWeatherDetails(latitude: Double, longitude: Double) {
 
         //sprawdzamy dostep do internetu
         if (Constants.isNetworkAvailable(this@MainActivity)) {
@@ -185,9 +189,15 @@ class MainActivity : AppCompatActivity() {
                 .addConverterFactory(GsonConverterFactory.create()) //format json
                 .build()
 
-            val service: WeatherService = retrofit.create(WeatherService::class.java) //prepare service
+            val service: WeatherService =
+                retrofit.create(WeatherService::class.java) //prepare service
 
-            val listCall: Call<WeatherResponse> = service.getWeather(latitude,longitude,Constants.metric_unit,Constants.app_id) //prepare listCall
+            val listCall: Call<WeatherResponse> = service.getWeather(
+                latitude,
+                longitude,
+                Constants.metric_unit,
+                Constants.app_id
+            ) //prepare listCall
 
             showProgressDialog()
 
@@ -250,7 +260,8 @@ class MainActivity : AppCompatActivity() {
             binding?.tvMainDescription?.text = weatherList.weather[i].description
             binding?.tvDegree?.text =
                 weatherList.main.temp.toString() + getUnit(application.resources.configuration.locales.toString())
-            binding?.tvDegreeDesc?.text = weatherList.main.feels_like.toString() + getUnit(application.resources.configuration.locales.toString())
+            binding?.tvDegreeDesc?.text =
+                weatherList.main.feels_like.toString() + getUnit(application.resources.configuration.locales.toString())
             binding?.tvSpeed?.text = weatherList.wind.speed.toString()
             binding?.tvMin?.text =
                 weatherList.main.temp_min.toString() + getUnit(application.resources.configuration.locales.toString())
@@ -260,8 +271,21 @@ class MainActivity : AppCompatActivity() {
             binding?.tvName?.text = weatherList.name
             binding?.tvSunriseTime?.text = unixTime(weatherList.sys.sunrise.toLong())
             binding?.tvSunsetTime?.text = unixTime(weatherList.sys.sunset.toLong())
+
+            when (weatherList.weather[i].icon) {
+                "01d" -> binding?.ivMain?.setImageResource(R.drawable.sunny)
+                "01n" -> binding?.ivMain?.setImageResource(R.drawable.moon)
+                "02d" -> binding?.ivMain?.setImageResource(R.drawable.cloudy)
+                "03d" -> binding?.ivMain?.setImageResource(R.drawable.clouds)
+                "09d" -> binding?.ivMain?.setImageResource(R.drawable.rain)
+                "10d" -> binding?.ivMain?.setImageResource(R.drawable.heavyrain)
+                "11d" -> binding?.ivMain?.setImageResource(R.drawable.thunderstorm)
+                "13d" -> binding?.ivMain?.setImageResource(R.drawable.snowflake)
+                "50d" -> binding?.ivMain?.setImageResource(R.drawable.mist)
+            }
         }
     }
+
     private fun getUnit(value: String): String? {
 
         var value = "°C"
@@ -271,14 +295,30 @@ class MainActivity : AppCompatActivity() {
         return value
     }
 
-    private fun unixTime(timex: Long): String?{
-        val date = Date(timex* 1000L)
+    private fun unixTime(timex: Long): String? {
+        val date = Date(timex * 1000L)
         val sdf = SimpleDateFormat("HH:mm")
         sdf.timeZone = TimeZone.getDefault()
         return sdf.format(date)
     }
-}
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return super.onCreateOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.refresh -> {
+                requestLocationData()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+
+        }
+
+    }
+}
 private fun <T> Call<T>.enqueue(callback: Callback<T>) {
 
 }
